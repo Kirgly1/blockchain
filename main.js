@@ -7,7 +7,6 @@ var WebSocket = require("ws");
 var http_port = process.env.HTTP_PORT || 3001;
 var p2p_port = process.env.P2P_PORT || 6001;
 var initialPeers = process.env.PEERS ? process.env.PEERS.split(',') : [];
-var difficulty = 4;
 var targetStart = '6';
 var targetEnd = '5';
 var populationSize = 10;
@@ -15,13 +14,12 @@ var mutationRate = 0.01;
 var generations = 100;
 
 class Block {
-    constructor(index, previousHash, timestamp, data, hash, difficulty, nonce) {
+    constructor(index, previousHash, timestamp, data, hash, nonce) {
         this.index = index;
         this.previousHash = previousHash.toString();
         this.timestamp = timestamp;
         this.data = data;
         this.hash = hash.toString();
-        this.difficulty = difficulty;
         this.nonce = nonce;
     }
 }
@@ -33,7 +31,7 @@ var MessageType = {
     RESPONSE_BLOCKCHAIN: 2
 };
 var getGenesisBlock = () => {
-    return new Block(0, "0", 1682839690, "RUT-MIIT first block", "8d9d5a7ff4a78042ea6737bf59c772f8ed27ef3c9b576eac1976c91aaf48d2de", 0, 0);
+    return new Block(0, "0", 1682839690, "RUT-MIIT first block", "8d9d5a7ff4a78042ea6737bf59c772f8ed27ef3c9b576eac1976c91aaf48d2de", 0);
 };
 var blockchain = [getGenesisBlock()];
 
@@ -64,12 +62,12 @@ var mineBlock = (blockData) => {
     var nextIndex = previousBlock.index + 1;
     var nextTimestamp = new Date().getTime() / 1000;
 
-    // Генетический алгоритм для поиска хеша
+
     var solution = geneticAlgorithm(nextIndex, previousBlock.hash, nextTimestamp, blockData);
     var nextHash = solution.hash;
     var nonce = solution.nonce;
 
-    return new Block(nextIndex, previousBlock.hash, nextTimestamp, blockData, nextHash, difficulty, nonce);
+    return new Block(nextIndex, previousBlock.hash, nextTimestamp, blockData, nextHash, nonce);
 };
 
 var geneticAlgorithm = (index, previousHash, timestamp, data) => {
@@ -87,7 +85,6 @@ var geneticAlgorithm = (index, previousHash, timestamp, data) => {
         }
         
         population = select(population);
-        population = crossover(population);
         population = mutate(population, index, previousHash, timestamp, data);
     }
     
@@ -126,14 +123,10 @@ var select = (population) => {
     return population.sort((a, b) => a.hash.localeCompare(b.hash)).slice(0, populationSize / 2);
 };
 
-var crossover = (population) => {
-    return population; // Для простоты, кроссовер не реализован
-};
-
 var mutate = (population, index, previousHash, timestamp, data) => {
     return population.map(individual => {
         if (Math.random() < mutationRate) {
-            individual.nonce += Math.floor(Math.random() * 1000); // Простая мутация
+            individual.nonce += Math.floor(Math.random() * 1000);
             individual.hash = calculateHash(index, previousHash, timestamp, data, individual.nonce);
         }
         return individual;
